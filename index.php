@@ -179,11 +179,75 @@ function highlightServerAddress($ip)
             font-family: var(--font-pixel);
             color: var(--primary-color);
             margin-bottom: 30px;
+            /* Jarak bawah default untuk h1 */
             font-size: 2.2em;
             text-shadow: 2px 2px 4px var(--shadow-color);
         }
 
+        /* Styling untuk bagian Salin IP Utama */
+        .main-ip-copy-section {
+            background-color: var(--background-color);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 30px;
+            /* Jarak di bawah block ini */
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .main-ip-copy-section h3 {
+            font-family: var(--font-pixel);
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        .main-ip-display {
+            font-family: var(--font-pixel);
+            font-size: 1.1em;
+            color: #FFE0B2;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 15px;
+            /* Jarak dari tombol */
+        }
+
+        .main-ip-display .server-ip {
+            color: var(--primary-color);
+        }
+
+        .copy-link-button {
+            background-color: var(--primary-color);
+            color: var(--background-color);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.5);
+        }
+
+        .copy-link-button:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.7);
+        }
+
+        .copy-link-button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 10px rgba(76, 175, 80, 0.5);
+        }
+
+
         .server-section {
+            /* Ini adalah blok status server utama */
             background-color: var(--background-color);
             border-radius: var(--border-radius);
             padding: 25px;
@@ -226,8 +290,8 @@ function highlightServerAddress($ip)
             font-family: var(--font-pixel);
             color: var(--primary-color);
             margin-top: 0;
-            font-size: 1.5em;
             margin-bottom: 20px;
+            font-size: 1.5em;
         }
 
         .server-type-status {
@@ -348,69 +412,6 @@ function highlightServerAddress($ip)
             color: var(--primary-color);
         }
 
-        /* Styling untuk bagian Salin IP Utama */
-        .main-ip-copy-section {
-            background-color: var(--background-color);
-            border-radius: var(--border-radius);
-            padding: 25px;
-            margin-top: 30px;
-            /* Jarak dari section di atasnya */
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .main-ip-copy-section h3 {
-            font-family: var(--font-pixel);
-            color: var(--primary-color);
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 1.2em;
-        }
-
-        .main-ip-display {
-            font-family: var(--font-pixel);
-            font-size: 1.1em;
-            /* Ukuran font lebih besar sedikit dari yang kecil tadi */
-            color: #FFE0B2;
-            background-color: rgba(0, 0, 0, 0.3);
-            padding: 12px 20px;
-            border-radius: 8px;
-            display: inline-block;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 15px;
-            /* Jarak dari tombol */
-        }
-
-        .main-ip-display .server-ip {
-            color: var(--primary-color);
-        }
-
-        .copy-link-button {
-            background-color: var(--primary-color);
-            color: var(--background-color);
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            font-size: 1.1em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.5);
-        }
-
-        .copy-link-button:hover {
-            background-color: var(--secondary-color);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.7);
-        }
-
-        .copy-link-button:active {
-            transform: translateY(0);
-            box-shadow: 0 3px 10px rgba(76, 175, 80, 0.5);
-        }
-
-
         .footer {
             margin-top: 40px;
             font-size: 0.9em;
@@ -513,6 +514,17 @@ function highlightServerAddress($ip)
     <div class="container">
         <h1>Status Server Milenin Craftthingy</h1>
 
+        <div class="main-ip-copy-section">
+            <h3>Gabung Server</h3>
+            <span class="main-ip-display" id="mainIpDisplay">
+                <span class="server-ip"><?php echo $server_ip_java; ?></span>
+            </span>
+            <button class="copy-link-button" onclick="copyMainLink()">Salin Link Server</button>
+        </div>
+
+        <hr style="border: 0; height: 1px; background-image: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0)); margin: 40px auto;">
+
+
         <div class="server-section">
             <h2>Status Server</h2>
 
@@ -585,15 +597,6 @@ function highlightServerAddress($ip)
             <?php endif; ?>
 
         </div>
-        <div class="main-ip-copy-section">
-            <h3>Gabung Server</h3>
-            <span class="main-ip-display" id="mainIpDisplay">
-                <span class="server-ip"><?php echo $server_ip_java; ?></span>
-            </span>
-            <button class="copy-link-button" onclick="copyMainLink()">Salin Link Server</button>
-        </div>
-
-
         <div class="server-locations">
             <h3>Lokasi Server:</h3>
             <p>
