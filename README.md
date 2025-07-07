@@ -1,7 +1,12 @@
 ---
+
 # Milenin-Status
 
 Ini adalah pemeriksa status server Minecraft yang dirancang untuk memantau status server **Milenin Craftthingy** yang berjalan di `milenin.craftthingy.com`. Alat ini memeriksa apakah server Minecraft **Java Edition** masih aktif di **port 25565** dan server **Bedrock Edition** aktif di **port 19132**.
+
+Anda dapat melihat status server secara langsung di:
+**[milenin-status.craftthingy.com](https://www.google.com/url?sa=E&source=gmail&q=http://milenin-status.craftthingy.com)**
+
 ---
 
 ## Fitur
@@ -60,4 +65,4 @@ Setelah semua file terunggah, buka URL _website_ Anda (misalnya, `http://milenin
 
 ---
 
-Semoga ini membantu para pemain dan komunitas Milenin Craftthingy untuk selalu tahu status server favorit mereka!
+Semoga ini membantu para pemain dan komunitas Milenin Craftthingy untuk selalu tahu status server favorit mereka\!
