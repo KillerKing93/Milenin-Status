@@ -1,4 +1,7 @@
 <?php
+// PHP Logic for Minecraft Server Status and Geo-location
+// Last Updated: 08-07-2025
+
 // --- Konfigurasi Server Minecraft Anda ---
 $server_ip_java = 'milenin.craftthingy.com'; // Alamat IP/Domain Server Java Edition
 $server_port_java = 25565; // Port Java Edition
@@ -7,36 +10,37 @@ $server_ip_bedrock = 'milenin.craftthingy.com'; // Alamat IP/Domain Server Bedro
 $server_port_bedrock = 19132; // Port Bedrock Edition
 
 // --- Konfigurasi Server Website Anda (Hostinger) ---
-$website_server_location = 'Indonesia (Jakarta, Singapore/APAC Region)'; // Sesuaikan dengan lokasi Hostinger Anda
+// Ganti ini dengan lokasi pusat data Hostinger yang Anda gunakan
+$website_server_location = 'Indonesia (Jakarta, Singapore/APAC Region)'; // Contoh, sesuaikan dengan lokasi Hostinger Anda
 
+// --- Variabel untuk Status ---
 $status_java = null;
 $error_java = null;
 $players_java = [];
-$ping_java_ms = 'N/A';
-$minecraft_server_geo_location = 'Tidak diketahui';
+$ping_java_ms = 'N/A'; // Ping dari API
+$minecraft_server_geo_location = 'Tidak diketahui'; // Lokasi server Minecraft
 
 // --- Konfigurasi Cache ---
 $cache_file = 'minecraft_status_cache.json';
-$cache_time = 60 * 6; // Cache selama 6 menit (360 detik), sedikit lebih lama dari cache API (5 menit)
+$cache_time = 60 * 6; // Cache selama 6 menit (360 detik). API mcsrvstat.us cache 5 menit.
 
 
 // --- Fungsi untuk mendapatkan geolokasi dari IP ---
 function getGeoLocation($ip) {
-    // API IP-API.com (gratis untuk non-komersial, batasan 45 requests/menit)
-    // Caching untuk ini mungkin perlu jika sering diakses, tapi karena ini hanya sekali per cache server Minecraft,
-    // mungkin tidak terlalu kritis.
+    // Menggunakan API IP-API.com (gratis untuk non-komersial, batasan 45 requests/menit)
+    // User-Agent yang deskriptif dan non-empty
     $url = "http://ip-api.com/json/$ip?fields=country,city,regionName";
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 2);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'MileninCraftthingyStatusWebsite (Contact: admin@yourdomain.com)'); // Deskriptif User-Agent
+    curl_setopt($ch, CURLOPT_TIMEOUT, 2); // Timeout 2 detik untuk API call geolokasi
+    curl_setopt($ch, CURLOPT_USERAGENT, 'MileninCraftthingyStatusWebsite-GeoLocation/1.0 (Contact: admin@craftthingy.com)');
     $response = curl_exec($ch);
     curl_close($ch);
 
     $data = json_decode($response, true);
 
-    if ($data && $data['status'] === 'success') {
+    if ($data && ($data['status'] ?? null) === 'success') {
         $location = [];
         if (!empty($data['city'])) {
             $location[] = $data['city'];
@@ -53,30 +57,32 @@ function getGeoLocation($ip) {
 }
 
 // --- Fungsi untuk mendapatkan status server dari mcsrvstat.us API (Updated for v3 & User-Agent) ---
-function getMinecraftStatusFromAPI($domain, $port) {
+function getMinecraftStatusFromAPI($domain, $port, $isBedrock = false) {
     // Menggunakan API v3
-    $apiUrl = "https://api.mcsrvstat.us/3/$domain:$port";
+    $endpoint = $isBedrock ? "bedrock/3" : "3";
+    $apiUrl = "https://api.mcsrvstat.us/{$endpoint}/{$domain}:{$port}";
+    
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $apiUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_TIMEOUT, 8); // Timeout lebih panjang (8 detik)
     // User-Agent yang lebih deskriptif dan non-empty sesuai dokumentasi API
-    curl_setopt($ch, CURLOPT_USERAGENT, 'MileninCraftthingyStatusWebsite/1.0 (Contact: admin@yourdomain.com)'); 
+    curl_setopt($ch, CURLOPT_USERAGENT, 'MileninCraftthingyStatusWebsite-APIClient/1.0 (Contact: admin@craftthingy.com)'); 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
     curl_close($ch);
 
     if ($httpCode === 403) {
-        return ['error' => 'API returned 403 Forbidden. Check your User-Agent and rate limits.'];
+        return ['error' => 'API returned 403 Forbidden. Check your User-Agent and rate limits.', 'http_code' => 403];
     }
     if ($httpCode !== 200 || $curlError) {
-        return ['error' => 'API call failed: ' . ($curlError ? $curlError : 'HTTP Status ' . $httpCode)];
+        return ['error' => 'API call failed: ' . ($curlError ? $curlError : 'HTTP Status ' . $httpCode), 'http_code' => $httpCode];
     }
 
     $data = json_decode($response, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
-        return ['error' => 'Failed to parse API response: ' . json_last_error_msg()];
+        return ['error' => 'Failed to parse API response: ' . json_last_error_msg(), 'http_code' => 200]; // Parse error, but received 200
     }
 
     return $data;
@@ -86,18 +92,23 @@ function getMinecraftStatusFromAPI($domain, $port) {
 // --- Dapatkan Status Server Java Edition (dengan Cache) ---
 $cache_valid = false;
 $cached_data = [];
+$cache_last_updated_time = time(); // Default ke waktu saat ini jika file cache belum ada
 
-if (file_exists($cache_file) && (time() - filemtime($cache_file) < $cache_time)) {
-    $cached_data_json = file_get_contents($cache_file);
-    $cached_data = json_decode($cached_data_json, true);
-    if (json_last_error() === JSON_ERROR_NONE && !empty($cached_data)) {
-        $cache_valid = true;
+if (file_exists($cache_file) && is_readable($cache_file)) {
+    $cache_last_updated_time = filemtime($cache_file);
+    if ((time() - $cache_last_updated_time) < $cache_time) {
+        $cached_data_json = file_get_contents($cache_file);
+        $cached_data = json_decode($cached_data_json, true);
+        if (json_last_error() === JSON_ERROR_NONE && !empty($cached_data)) {
+            $cache_valid = true;
+        }
     }
 }
 
 if ($cache_valid) {
     $api_response_java = $cached_data;
-    $error_java = '(Data dari cache. Terakhir diperbarui ' . date('H:i:s, d-m-Y', filemtime($cache_file)) . ' WIB)';
+    // Pesan error diisi oleh API jika ada, atau di sini untuk indikator cache
+    $error_java = '(Data dari cache. Terakhir diperbarui ' . date('H:i:s, d-m-Y', $cache_last_updated_time) . ' WIB)';
 } else {
     // Jika cache tidak valid, panggil API
     $api_response_java = getMinecraftStatusFromAPI($server_ip_java, $server_port_java);
@@ -105,6 +116,7 @@ if ($cache_valid) {
     // Simpan ke cache jika berhasil dan tidak ada error
     if (!isset($api_response_java['error'])) {
         file_put_contents($cache_file, json_encode($api_response_java));
+        $cache_last_updated_time = time(); // Perbarui waktu cache
     }
 }
 
@@ -113,7 +125,7 @@ if (isset($api_response_java['online']) && $api_response_java['online'] === true
     $status_java = $api_response_java;
     
     // Ambil ping dari debug info jika tersedia, jika tidak, gunakan latency
-    $ping_java_ms = $api_response_java['debug']['ping'] ?? ($api_response_java['latency'] ?? 'N/A');
+    $ping_java_ms = $api_response_java['latency'] ?? ($api_response_java['debug']['ping'] ? ($api_response_java['latency'] ?? 'N/A') : 'N/A');
 
     // Coba dapatkan lokasi dari IP server utama
     if (isset($api_response_java['ip']) && filter_var($api_response_java['ip'], FILTER_VALIDATE_IP)) {
@@ -138,9 +150,8 @@ if (isset($api_response_java['online']) && $api_response_java['online'] === true
 }
 
 
-// --- Dapatkan Status Server Bedrock Edition (Basic Check) ---
-// Untuk Bedrock, kita bisa menggunakan API mcsrvstat.us juga agar konsisten
-$api_response_bedrock = getMinecraftStatusFromAPI($server_ip_bedrock, $server_port_bedrock); // Gunakan port 19132 untuk Bedrock API
+// --- Dapatkan Status Server Bedrock Edition dari API ---
+$api_response_bedrock = getMinecraftStatusFromAPI($server_ip_bedrock, $server_port_bedrock, true); // Parameter true untuk Bedrock API
 $bedrock_online = false;
 $bedrock_error = null;
 
@@ -148,7 +159,7 @@ if (isset($api_response_bedrock['error'])) {
     $bedrock_error = 'Gagal mendapatkan status Bedrock dari API. (Error: ' . htmlspecialchars($api_response_bedrock['error']) . ')';
 } elseif (isset($api_response_bedrock['online']) && $api_response_bedrock['online'] === true) {
     $bedrock_online = true;
-    // Jika perlu detail Bedrock lain dari API, tambahkan di sini
+    // Jika perlu detail Bedrock lain dari API, tambahkan di sini dari $api_response_bedrock
 } else {
     $bedrock_error = 'Server Bedrock offline atau tidak merespons.';
 }
@@ -572,6 +583,11 @@ function highlightServerAddress($ip) {
                             <strong>Port:</strong> <?php echo $server_port_bedrock; ?>
                         </div>
                     <?php endif; ?>
+                    <?php if ($bedrock_error): ?>
+                        <div class="info-item" style="color: #FFEB3B; font-size: 0.9em; margin-top: 15px;">
+                            **Pesan Error Bedrock Edition:** <?php echo htmlspecialchars($bedrock_error); ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div> <?php if ($error_java): ?>
                 <div class="info-item" style="color: #FFEB3B; font-size: 0.9em; margin-top: 15px;">
@@ -604,7 +620,7 @@ function highlightServerAddress($ip) {
         </div>
 
         <div class="footer">
-            Dibuat dengan ❤️ untuk Milenin Craftthingy. | Terakhir diperbarui: <?php echo date('H:i:s, d-m-Y', filemtime($cache_file) ?? time()); ?> WIB
+            Dibuat dengan ❤️ untuk Milenin Craftthingy. | Terakhir diperbarui: <?php echo date('H:i:s, d-m-Y', $cache_last_updated_time); ?> WIB
         </div>
     </div>
 
