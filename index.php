@@ -31,12 +31,11 @@ $minecraft_server_geo_location = 'Tidak diketahui'; // Untuk lokasi server Minec
 // --- Fungsi untuk mendapatkan geolokasi dari IP ---
 function getGeoLocation($ip)
 {
-    // Gunakan IP-API.com (gratis untuk non-komersial, batasan 45 requests/menit)
     $url = "http://ip-api.com/json/$ip?fields=country,city,regionName";
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 2); // Timeout 2 detik
+    curl_setopt($ch, CURLOPT_TIMEOUT, 2);
     $response = curl_exec($ch);
     curl_close($ch);
 
@@ -62,7 +61,7 @@ function getGeoLocation($ip)
 // --- Dapatkan Status Server Java Edition ---
 try {
     // 1. Dapatkan Ping/Latency menggunakan MinecraftPing
-    $Ping = new MinecraftPing($server_ip_java, $server_port_java, 3); // Timeout 3 detik
+    $Ping = new MinecraftPing($server_ip_java, $server_port_java, 5); // Tingkatkan timeout
     $ping_result = $Ping->Query();
     if ($ping_result && isset($ping_result['latency'])) {
         $ping_java_ms = $ping_result['latency'];
@@ -71,7 +70,7 @@ try {
 
     // 2. Dapatkan Informasi Detail menggunakan MinecraftQuery
     $Query = new MinecraftQuery();
-    $Query->Connect($server_ip_java, $server_port_java, 3); // Timeout 3 detik
+    $Query->Connect($server_ip_java, $server_port_java, 5); // Tingkatkan timeout
 
     $info = $Query->GetInfo();
     $players = $Query->GetPlayers();
@@ -87,7 +86,6 @@ try {
         }
 
         // Dapatkan geolokasi server Minecraft
-        // Ambil IP aktual dari domain jika server_ip_java adalah domain
         $actual_server_ip = gethostbyname($server_ip_java);
         if ($actual_server_ip && filter_var($actual_server_ip, FILTER_VALIDATE_IP)) {
             $minecraft_server_geo_location = getGeoLocation($actual_server_ip);
@@ -98,17 +96,15 @@ try {
         $players_java = $players;
     }
 } catch (MinecraftPingException $e) {
-    $error_java = 'Server offline atau tidak merespons. (Ping Error: ' . $e->getMessage() . ')';
+    $error_java = 'Server Java offline atau tidak merespons ping. (Error: ' . htmlspecialchars($e->getMessage()) . ')';
     $status_java = null;
 } catch (MinecraftQueryException $e) {
-    $error_java = 'Server online, tapi gagal mendapatkan detail (Query Error: ' . $e->getMessage() . ').';
+    // Query gagal, tapi ping mungkin berhasil
+    $error_java = 'Server Java online, tapi gagal mendapatkan detail lengkap. Pastikan `enable-query=true` di server.properties dan port UDP 25565 (atau port query spesifik Anda) terbuka di firewall. (Error: ' . htmlspecialchars($e->getMessage()) . ')';
     if ($ping_java_ms !== 'N/A') {
-        $status_java = ['online' => true];
-        if (!isset($status_java['Players'])) $status_java['Players'] = 0;
-        if (!isset($status_java['MaxPlayers'])) $status_java['MaxPlayers'] = 0;
-        if (!isset($status_java['Version'])) $status_java['Version'] = 'Unknown';
+        $status_java = ['online' => true, 'Players' => 0, 'MaxPlayers' => 0, 'Version' => 'Tidak Diketahui'];
     } else {
-        $status_java = null;
+        $status_java = null; // Jika ping juga gagal, maka server memang offline
     }
 }
 
@@ -120,7 +116,6 @@ if ($fp) {
     $bedrock_online = true;
     fclose($fp);
 }
-
 
 // --- Fungsi untuk menyorot IP dan Port ---
 function highlightServerAddress($ip, $port)
@@ -173,7 +168,8 @@ function highlightServerAddress($ip, $port)
             border-radius: var(--border-radius);
             box-shadow: 0 10px 30px var(--shadow-color);
             padding: 40px;
-            max-width: 900px;
+            max-width: 600px;
+            /* Lebar container lebih ramping */
             width: 100%;
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -234,6 +230,34 @@ function highlightServerAddress($ip, $port)
             margin-bottom: 20px;
         }
 
+        .server-type-status {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            /* Agar responsif */
+        }
+
+        .type-box {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 15px 20px;
+            border-radius: 10px;
+            flex: 1;
+            min-width: 200px;
+            /* Minimum width untuk setiap box */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .type-box h3 {
+            font-family: var(--font-general);
+            font-size: 1.2em;
+            color: #FFEB3B;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
         .status-indicator {
             font-weight: bold;
             padding: 8px 15px;
@@ -251,8 +275,7 @@ function highlightServerAddress($ip, $port)
             box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
         }
 
-        .status-offline,
-        .status-error {
+        .status-offline {
             background-color: var(--offline-color);
             color: var(--text-color);
             box-shadow: 0 0 15px rgba(244, 67, 54, 0.6);
@@ -276,7 +299,6 @@ function highlightServerAddress($ip, $port)
             font-style: italic;
             color: #ccc;
             white-space: pre-wrap;
-            /* Mempertahankan format baris dari MOTD */
             overflow-wrap: break-word;
             font-family: 'Courier New', monospace;
             border: 1px dashed rgba(255, 255, 255, 0.1);
@@ -304,7 +326,6 @@ function highlightServerAddress($ip, $port)
             padding: 0;
             margin: 0;
             columns: 2;
-            /* Bagi menjadi 2 kolom */
             -webkit-columns: 2;
             -moz-columns: 2;
         }
@@ -320,31 +341,50 @@ function highlightServerAddress($ip, $port)
 
         .players-list li::before {
             content: "🎮 ";
-            /* Icon kecil */
             margin-right: 5px;
             color: var(--primary-color);
         }
 
+        .ip-copy-section {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-top: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .ip-copy-section h3 {
+            font-family: var(--font-pixel);
+            font-size: 1.2em;
+            color: #FFE0B2;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .ip-item {
+            margin-bottom: 15px;
+        }
 
         .ip-display {
             font-family: var(--font-pixel);
-            font-size: 1.4em;
+            font-size: 1.2em;
+            /* Sedikit lebih kecil agar muat */
             color: #FFE0B2;
-            /* Orange cerah */
             background-color: rgba(0, 0, 0, 0.3);
-            padding: 15px 25px;
+            padding: 12px 20px;
+            /* Padding sedikit berkurang */
             border-radius: 8px;
-            margin: 25px auto;
             display: inline-block;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             cursor: pointer;
             transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .ip-display:hover {
             background-color: rgba(0, 0, 0, 0.4);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
         }
 
         .ip-display .server-ip {
@@ -353,22 +393,23 @@ function highlightServerAddress($ip, $port)
 
         .ip-display .server-port {
             color: #81C784;
-            /* Hijau muda */
         }
 
         .copy-button {
             background-color: var(--primary-color);
             color: var(--background-color);
             border: none;
-            padding: 12px 25px;
+            padding: 10px 20px;
+            /* Padding sedikit berkurang */
             border-radius: 8px;
-            font-size: 1.1em;
+            font-size: 1em;
+            /* Ukuran font sedikit berkurang */
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
             box-shadow: 0 5px 15px rgba(76, 175, 80, 0.5);
-            margin-top: 20px;
-            letter-spacing: 0.8px;
+            margin-left: 10px;
+            /* Jarak dari IP display */
         }
 
         .copy-button:hover {
@@ -406,6 +447,7 @@ function highlightServerAddress($ip, $port)
         @media (max-width: 768px) {
             .container {
                 padding: 25px;
+                max-width: 100%;
             }
 
             h1 {
@@ -416,21 +458,31 @@ function highlightServerAddress($ip, $port)
                 font-size: 1.2em;
             }
 
+            .server-type-status {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .type-box {
+                min-width: unset;
+                width: 100%;
+            }
+
             .ip-display {
-                font-size: 1.1em;
-                padding: 12px 20px;
+                font-size: 1em;
+                padding: 10px 15px;
             }
 
             .copy-button {
-                padding: 10px 20px;
-                font-size: 1em;
+                padding: 8px 15px;
+                font-size: 0.9em;
+                margin-top: 10px;
+                /* Jarak ke bawah jika tombol turun */
+                margin-left: 0;
             }
 
             .players-list ul {
                 columns: 1;
-                /* Di layar kecil, jadi 1 kolom */
-                -webkit-columns: 1;
-                -moz-columns: 1;
             }
         }
     </style>
@@ -441,69 +493,79 @@ function highlightServerAddress($ip, $port)
         <h1>Status Server Milenin Craftthingy</h1>
 
         <div class="server-section">
-            <h2>Minecraft Java Edition</h2>
-            <?php if ($status_java): ?>
-                <div class="status-indicator status-online">Online</div>
-                <div class="info-item">
-                    <strong>Pemain:</strong> <?php echo $status_java['Players']; ?> / <?php echo $status_java['MaxPlayers']; ?>
-                </div>
-                <div class="info-item">
-                    <strong>Versi:</strong> <?php echo htmlspecialchars($status_java['Version']); ?>
-                </div>
-                <div class="info-item">
-                    <strong>Ping:</strong> <?php echo $ping_java_ms; ?>ms
-                </div>
-                <?php if (!empty($status_java['HostName'])): ?>
-                    <div class="motd"><?php echo htmlspecialchars($status_java['HostName']); ?></div>
-                <?php endif; ?>
+            <h2>Status Server</h2>
 
-                <?php if (!empty($players_java)): ?>
-                    <div class="players-list">
-                        <h3>Pemain Online:</h3>
-                        <ul>
-                            <?php foreach ($players_java as $player): ?>
-                                <li><?php echo htmlspecialchars($player); ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                <?php elseif ($status_java['Players'] > 0): ?>
-                    <div class="players-list">
-                        <h3>Pemain Online:</h3>
-                        <p style="text-align: center; font-style: italic; color: #aaa;">Daftar pemain tidak tersedia (mungkin karena server tidak mengizinkan query daftar pemain).</p>
-                    </div>
-                <?php endif; ?>
+            <div class="server-type-status">
+                <div class="type-box">
+                    <h3>Minecraft Java Edition</h3>
+                    <?php if ($status_java): ?>
+                        <div class="status-indicator status-online">Online</div>
+                        <div class="info-item">
+                            <strong>Pemain:</strong> <?php echo $status_java['Players']; ?> / <?php echo $status_java['MaxPlayers']; ?>
+                        </div>
+                        <div class="info-item">
+                            <strong>Versi:</strong> <?php echo htmlspecialchars($status_java['Version']); ?>
+                        </div>
+                        <div class="info-item">
+                            <strong>Ping:</strong> <?php echo $ping_java_ms; ?>ms
+                        </div>
+                        <?php if (!empty($status_java['HostName'])): ?>
+                            <div class="motd"><?php echo htmlspecialchars($status_java['HostName']); ?></div>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <div class="status-indicator status-offline">Offline</div>
+                        <div class="info-item">Server sedang tidak tersedia.</div>
+                    <?php endif; ?>
+                </div>
 
-            <?php else: ?>
-                <div class="status-indicator status-offline">Offline</div>
-                <div class="info-item">Server sedang tidak tersedia atau ada masalah.</div>
-                <?php if ($error_java): ?>
-                    <div class="info-item" style="color: #FFEB3B; font-size: 0.9em;">(Detail Error: <?php echo htmlspecialchars($error_java); ?>)</div>
-                <?php endif; ?>
+                <div class="type-box">
+                    <h3>Minecraft Bedrock Edition</h3>
+                    <?php if ($bedrock_online): ?>
+                        <div class="status-indicator status-online">Online</div>
+                        <div class="info-item">Server Bedrock Edition terdeteksi online.</div>
+                        <div class="info-item" style="font-size: 0.9em; color: #BBB;">(Tidak ada detail pemain/MOTD dari cek dasar.)</div>
+                    <?php else: ?>
+                        <div class="status-indicator status-offline">Offline</div>
+                        <div class="info-item">Server sedang tidak tersedia.</div>
+                    <?php endif; ?>
+                </div>
+            </div> <?php if ($error_java): ?>
+                <div class="info-item" style="color: #FFEB3B; font-size: 0.9em; margin-top: 15px;">
+                    **Pesan Error Java Edition:** <?php echo htmlspecialchars($error_java); ?>
+                </div>
             <?php endif; ?>
 
-            <div class="ip-display" id="javaIpDisplay" data-ip="<?php echo $server_ip_java . ':' . $server_port_java; ?>">
-                <?php echo highlightServerAddress($server_ip_java, $server_port_java); ?>
-            </div>
-            <button class="copy-button" onclick="copyIp('javaIpDisplay')">Salin IP Java Edition</button>
+            <?php if (!empty($players_java)): ?>
+                <div class="players-list">
+                    <h3>Pemain Online Java Edition:</h3>
+                    <ul>
+                        <?php foreach ($players_java as $player): ?>
+                            <li><?php echo htmlspecialchars($player); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php elseif ($status_java && $status_java['Players'] > 0 && empty($players_java)): ?>
+                <div class="players-list">
+                    <h3>Pemain Online Java Edition:</h3>
+                    <p style="text-align: center; font-style: italic; color: #aaa;">Daftar pemain tidak tersedia (mungkin karena server tidak mengizinkan query daftar pemain).</p>
+                </div>
+            <?php endif; ?>
+
         </div>
-
-        <hr style="border: 0; height: 1px; background-image: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0)); margin: 40px auto;">
-
-        <div class="server-section">
-            <h2>Minecraft Bedrock Edition</h2>
-            <?php if ($bedrock_online): ?>
-                <div class="status-indicator status-online">Online</div>
-                <div class="info-item">Server Bedrock Edition terdeteksi online.</div>
-                <div class="info-item" style="font-size: 0.9em; color: #BBB;">(Pustaka ini tidak menyediakan detail pemain/MOTD untuk Bedrock secara langsung. Cek manual di game.)</div>
-            <?php else: ?>
-                <div class="status-indicator status-offline">Offline</div>
-                <div class="info-item">Server Bedrock Edition sedang tidak tersedia atau ada masalah.</div>
-            <?php endif; ?>
-
-            <div class="ip-display" id="bedrockIpDisplay" data-ip="<?php echo $server_ip_bedrock . ':' . $server_port_bedrock; ?>">
-                <?php echo highlightServerAddress($server_ip_bedrock, $server_port_bedrock); ?>
+        <div class="ip-copy-section">
+            <h3>Salin IP Server</h3>
+            <div class="ip-item">
+                <span class="ip-display" id="javaIpDisplay" data-ip="<?php echo $server_ip_java . ':' . $server_port_java; ?>">
+                    <?php echo highlightServerAddress($server_ip_java, $server_port_java); ?>
+                </span>
+                <button class="copy-button" onclick="copyIp('javaIpDisplay')">Salin IP Java</button>
             </div>
-            <button class="copy-button" onclick="copyIp('bedrockIpDisplay')">Salin IP Bedrock Edition</button>
+            <div class="ip-item">
+                <span class="ip-display" id="bedrockIpDisplay" data-ip="<?php echo $server_ip_bedrock . ':' . $server_port_bedrock; ?>">
+                    <?php echo highlightServerAddress($server_ip_bedrock, $server_port_bedrock); ?>
+                </span>
+                <button class="copy-button" onclick="copyIp('bedrockIpDisplay')">Salin IP Bedrock</button>
+            </div>
         </div>
 
         <div class="server-locations">
