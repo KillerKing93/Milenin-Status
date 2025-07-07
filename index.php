@@ -1,115 +1,87 @@
 <?php
-// Pastikan semua file ini sudah diunggah ke direktori yang sama di server Hostinger Anda:
-// MinecraftPing.php, MinecraftPingException.php, MinecraftQuery.php, MinecraftQueryException.php
-require __DIR__ . '/MinecraftPing.php';
-require __DIR__ . '/MinecraftPingException.php';
-require __DIR__ . '/MinecraftQuery.php';
-require __DIR__ . '/MinecraftQueryException.php';
+// Tidak lagi memerlukan pustaka xPaw, karena kita akan menggunakan API pihak ketiga
+// require __DIR__ . '/MinecraftPing.php';
+// require __DIR__ . '/MinecraftPingException.php';
+// require __DIR__ . '/MinecraftQuery.php';
+// require __DIR__ . '/MinecraftQueryException.php';
 
-use xPaw\MinecraftPing;
-use xPaw\MinecraftPingException;
-use xPaw\MinecraftQuery;
-use xPaw\MinecraftQueryException;
+// use xPaw\MinecraftPing;
+// use xPaw\MinecraftPingException;
+// use xPaw\MinecraftQuery;
+// use xPaw\MinecraftQueryException;
 
 // --- Konfigurasi Server Minecraft Anda ---
 $server_ip_java = 'milenin.craftthingy.com'; // Alamat IP/Domain Server Java Edition
-$server_port_java = 25565; // Port Java Edition (biasanya sama untuk game dan query)
+$server_port_java = 25565; // Port Java Edition
 
 $server_ip_bedrock = 'milenin.craftthingy.com'; // Alamat IP/Domain Server Bedrock Edition
 $server_port_bedrock = 19132; // Port Bedrock Edition
 
 // --- Konfigurasi Server Website Anda (Hostinger) ---
-// Ganti ini dengan lokasi pusat data Hostinger yang Anda gunakan
-$website_server_location = 'Indonesia (Jakarta, Singapore/APAC Region)'; // Contoh, sesuaikan dengan lokasi Hostinger Anda
+$website_server_location = 'Indonesia (Jakarta, Singapore/APAC Region)'; // Sesuaikan dengan lokasi Hostinger Anda
 
 $status_java = null;
 $error_java = null;
-$players_java = []; // Untuk menyimpan daftar pemain
-$ping_java_ms = 'N/A'; // Untuk menyimpan nilai ping
-$minecraft_server_geo_location = 'Tidak diketahui'; // Untuk lokasi server Minecraft
+$players_java = [];
+$ping_java_ms = 'N/A';
+$minecraft_server_geo_location = 'Tidak diketahui';
 
-// --- Fungsi untuk mendapatkan geolokasi dari IP ---
-function getGeoLocation($ip)
+// --- Fungsi untuk mendapatkan status server dari mcsrvstat.us API ---
+function getMinecraftStatusFromAPI($domain, $port)
 {
-    $url = "http://ip-api.com/json/$ip?fields=country,city,regionName";
+    // API untuk Java Edition
+    $apiUrl = "https://api.mcsrvstat.us/2/$domain:$port";
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_URL, $apiUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5); // Timeout 5 detik untuk API call
     $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
     curl_close($ch);
 
+    if ($httpCode !== 200 || $curlError) {
+        return ['error' => 'API call failed: ' . ($curlError ? $curlError : 'HTTP Status ' . $httpCode)];
+    }
+
     $data = json_decode($response, true);
-
-    if ($data && $data['status'] === 'success') {
-        $location = [];
-        if (!empty($data['city'])) {
-            $location[] = $data['city'];
-        }
-        if (!empty($data['regionName'])) {
-            $location[] = $data['regionName'];
-        }
-        if (!empty($data['country'])) {
-            $location[] = $data['country'];
-        }
-        return implode(', ', $location);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return ['error' => 'Failed to parse API response: ' . json_last_error_msg()];
     }
-    return 'Tidak diketahui';
+
+    return $data;
 }
 
+// --- Dapatkan Status Server Java Edition dari API ---
+$api_response_java = getMinecraftStatusFromAPI($server_ip_java, $server_port_java);
 
-// --- Dapatkan Status Server Java Edition ---
-try {
-    // 1. Dapatkan Ping/Latency menggunakan MinecraftPing
-    $Ping = new MinecraftPing($server_ip_java, $server_port_java, 5); // Tingkatkan timeout
-    $ping_result = $Ping->Query();
-    if ($ping_result && isset($ping_result['latency'])) {
-        $ping_java_ms = $ping_result['latency'];
-    }
-    $Ping->Close();
-
-    // 2. Dapatkan Informasi Detail menggunakan MinecraftQuery
-    $Query = new MinecraftQuery();
-    $Query->Connect($server_ip_java, $server_port_java, 5); // Tingkatkan timeout
-
-    $info = $Query->GetInfo();
-    $players = $Query->GetPlayers();
-
-    if ($info) {
-        $status_java = $info;
-        $status_java['online'] = true;
-        $status_java['players']['online'] = $info['Players'];
-        $status_java['players']['max'] = $info['MaxPlayers'];
-        $status_java['version']['name'] = $info['Version'];
-        if (isset($info['HostName'])) {
-            $status_java['description']['text'] = $info['HostName'];
-        }
-
-        // Dapatkan geolokasi server Minecraft
-        $actual_server_ip = gethostbyname($server_ip_java);
-        if ($actual_server_ip && filter_var($actual_server_ip, FILTER_VALIDATE_IP)) {
-            $minecraft_server_geo_location = getGeoLocation($actual_server_ip);
-        }
-    }
-
-    if ($players) {
-        $players_java = $players;
-    }
-} catch (MinecraftPingException $e) {
-    $error_java = 'Server Java offline atau tidak merespons ping. (Error: ' . htmlspecialchars($e->getMessage()) . ')';
+if (isset($api_response_java['error'])) {
+    $error_java = 'Gagal mendapatkan status dari API. (Error: ' . htmlspecialchars($api_response_java['error']) . ')';
     $status_java = null;
-} catch (MinecraftQueryException $e) {
-    // Query gagal, tapi ping mungkin berhasil
-    $error_java = 'Server Java online, tapi gagal mendapatkan detail lengkap. Pastikan `enable-query=true` di server.properties dan port UDP 25565 (atau port query spesifik Anda) terbuka di firewall. (Error: ' . htmlspecialchars($e->getMessage()) . ')';
-    if ($ping_java_ms !== 'N/A') {
-        $status_java = ['online' => true, 'Players' => 0, 'MaxPlayers' => 0, 'Version' => 'Tidak Diketahui'];
-    } else {
-        $status_java = null; // Jika ping juga gagal, maka server memang offline
-    }
-}
+} elseif (isset($api_response_java['online']) && $api_response_java['online'] === true) {
+    $status_java = $api_response_java; // Simpan seluruh respons API
 
+    // Mapping data API ke variabel yang sudah ada
+    $ping_java_ms = $api_response_java['latency'] ?? 'N/A'; // Latency bisa dari ping
+
+    // Coba dapatkan lokasi dari IP server utama
+    if (isset($api_response_java['ip']) && filter_var($api_response_java['ip'], FILTER_VALIDATE_IP)) {
+        $minecraft_server_geo_location = getGeoLocation($api_response_java['ip']);
+    } elseif (isset($api_response_java['dns']['ip']) && filter_var($api_response_java['dns']['ip'], FILTER_VALIDATE_IP)) {
+        $minecraft_server_geo_location = getGeoLocation($api_response_java['dns']['ip']);
+    }
+
+    if (isset($api_response_java['players']['list'])) {
+        $players_java = $api_response_java['players']['list'];
+    }
+} else {
+    $error_java = 'Server Java offline atau tidak merespons.';
+    $status_java = null;
+}
 
 // --- Dapatkan Status Server Bedrock Edition (Basic Check) ---
+// Note: mcsrvstat.us juga bisa query Bedrock, tapi untuk kesederhanaan
+// kita tetap gunakan cek port dasar karena hasilnya di API tidak sedetail Java
 $bedrock_online = false;
 $fp = @fsockopen($server_ip_bedrock, $server_port_bedrock, $errno, $errstr, 2);
 if ($fp) {
@@ -534,10 +506,10 @@ function highlightServerAddress($ip)
                     <?php if ($status_java): ?>
                         <div class="status-indicator status-online">Online</div>
                         <div class="info-item">
-                            <strong>Pemain:</strong> <?php echo $status_java['Players']; ?> / <?php echo $status_java['MaxPlayers']; ?>
+                            <strong>Pemain:</strong> <?php echo $status_java['players']['online'] ?? '0'; ?> / <?php echo $status_java['players']['max'] ?? '0'; ?>
                         </div>
                         <div class="info-item">
-                            <strong>Versi:</strong> <?php echo htmlspecialchars($status_java['Version']); ?>
+                            <strong>Versi:</strong> <?php echo htmlspecialchars($status_java['version']['name'] ?? 'N/A'); ?>
                         </div>
                         <div class="info-item">
                             <strong>Ping:</strong> <?php echo $ping_java_ms; ?>ms
@@ -545,8 +517,10 @@ function highlightServerAddress($ip)
                         <div class="info-item">
                             <strong>Port:</strong> <?php echo $server_port_java; ?>
                         </div>
-                        <?php if (!empty($status_java['HostName'])): ?>
-                            <div class="motd"><?php echo htmlspecialchars($status_java['HostName']); ?></div>
+                        <?php if (!empty($status_java['motd']['clean'])): ?>
+                            <div class="motd"><?php echo htmlspecialchars($status_java['motd']['clean']); ?></div>
+                        <?php elseif (!empty($status_java['motd']['html'])): ?>
+                            <div class="motd"><?php echo htmlspecialchars($status_java['motd']['html']); ?></div>
                         <?php endif; ?>
                     <?php else: ?>
                         <div class="status-indicator status-offline">Offline</div>
@@ -589,7 +563,7 @@ function highlightServerAddress($ip)
                         <?php endforeach; ?>
                     </ul>
                 </div>
-            <?php elseif ($status_java && $status_java['Players'] > 0 && empty($players_java)): ?>
+            <?php elseif ($status_java && ($status_java['players']['online'] ?? 0) > 0 && empty($players_java)): ?>
                 <div class="players-list">
                     <h3>Pemain Online Java Edition:</h3>
                     <p style="text-align: center; font-style: italic; color: #aaa;">Daftar pemain tidak tersedia (mungkin karena server tidak mengizinkan query daftar pemain).</p>
@@ -620,9 +594,9 @@ function highlightServerAddress($ip)
                     Swal.fire({
                         icon: 'success',
                         title: 'Berhasil Disalin!',
-                        text: 'Link Server: ' + mainLink + ' telah disalin ke clipboard Anda. Gunakan port ' + <?php echo $server_port_java; ?> + ' untuk Java dan ' + <?php echo $server_port_bedrock; ?> + ' untuk Bedrock.',
+                        html: 'Link Server: <strong>' + mainLink + '</strong> telah disalin ke clipboard Anda.<br>Gunakan port <strong><?php echo $server_port_java; ?></strong> untuk Java dan <strong><?php echo $server_port_bedrock; ?></strong> untuk Bedrock.',
                         showConfirmButton: false,
-                        timer: 4000, // Durasi lebih lama karena ada info port
+                        timer: 5000, // Durasi lebih lama karena ada info port
                         timerProgressBar: true,
                         customClass: {
                             popup: 'swal2-dark-mode'
@@ -653,9 +627,9 @@ function highlightServerAddress($ip)
                     Swal.fire({
                         icon: 'success',
                         title: 'Berhasil Disalin!',
-                        text: 'Link Server: ' + mainLink + ' telah disalin ke clipboard Anda. Gunakan port ' + <?php echo $server_port_java; ?> + ' untuk Java dan ' + <?php echo $server_port_bedrock; ?> + ' untuk Bedrock.',
+                        html: 'Link Server: <strong>' + mainLink + '</strong> telah disalin ke clipboard Anda.<br>Gunakan port <strong><?php echo $server_port_java; ?></strong> untuk Java dan <strong><?php echo $server_port_bedrock; ?></strong> untuk Bedrock.',
                         showConfirmButton: false,
-                        timer: 4000,
+                        timer: 5000,
                         timerProgressBar: true,
                         customClass: {
                             popup: 'swal2-dark-mode'
