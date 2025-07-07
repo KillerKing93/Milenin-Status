@@ -577,13 +577,14 @@ function highlightServerAddress($ip)
             <div class="server-type-status">
                 <div class="type-box">
                     <h3>Minecraft Java Edition</h3>
-                    <?php if ($status_java): ?>
+                    <?php if ($status_java && ($status_java['online'] ?? false)): // Added null coalescing for 'online' 
+                    ?>
                         <div class="status-indicator status-online">Online</div>
                         <div class="info-item">
                             <strong>Pemain:</strong> <?php echo $status_java['players']['online'] ?? '0'; ?> / <?php echo $status_java['players']['max'] ?? '0'; ?>
                         </div>
                         <div class="info-item">
-                            <strong>Versi:</strong> <?php echo htmlspecialchars($status_java['version']['name'] ?? 'N/A'); ?>
+                            <strong>Versi:</strong> <?php echo htmlspecialchars($status_java['version']['name'] ?? $status_java['version'] ?? 'N/A'); ?>
                         </div>
                         <div class="info-item">
                             <strong>Ping:</strong> <?php echo $ping_java_ms; ?>ms
