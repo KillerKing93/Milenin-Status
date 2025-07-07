@@ -1,6 +1,6 @@
 <?php
 // PHP Logic for Minecraft Server Status and Geo-location
-// Last Updated: 08-07-2025
+// Last Updated: 08-07-2025 WIB
 
 // --- Konfigurasi Server Minecraft Anda ---
 $server_ip_java = 'milenin.craftthingy.com'; // Alamat IP/Domain Server Java Edition
@@ -123,11 +123,14 @@ if ($cache_valid) {
 }
 
 // Proses respons API (dari cache atau API langsung)
-if (isset($api_response_java['online']) && $api_response_java['online'] === true) {
+if (isset($api_response_java['online']) && ($api_response_java['online'] ?? false) === true) {
     $status_java = $api_response_java;
 
     // Ambil ping dari debug info jika tersedia, jika tidak, gunakan latency
-    $ping_java_ms = $api_response_java['latency'] ?? ($api_response_java['debug']['ping'] ? ($api_response_java['latency'] ?? 'N/A') : 'N/A');
+    $ping_java_ms = $api_response_java['latency'] ?? 'N/A'; // latency langsung dari respons
+    if (isset($api_response_java['debug']['ping']) && $api_response_java['debug']['ping'] === true && $ping_java_ms === 'N/A') {
+        // Jika debug.ping true tapi latency tidak ada, mungkin ada masalah, tetap N/A
+    }
 
     // Coba dapatkan lokasi dari IP server utama
     if (isset($api_response_java['ip']) && filter_var($api_response_java['ip'], FILTER_VALIDATE_IP)) {
@@ -155,13 +158,14 @@ if (isset($api_response_java['online']) && $api_response_java['online'] === true
 // --- Dapatkan Status Server Bedrock Edition dari API ---
 $api_response_bedrock = getMinecraftStatusFromAPI($server_ip_bedrock, $server_port_bedrock, true); // Parameter true untuk Bedrock API
 $bedrock_online = false;
-$bedrock_error = null;
+$bedrock_error = null; // Error spesifik untuk Bedrock
 
 if (isset($api_response_bedrock['error'])) {
     $bedrock_error = 'Gagal mendapatkan status Bedrock dari API. (Error: ' . htmlspecialchars($api_response_bedrock['error']) . ')';
-} elseif (isset($api_response_bedrock['online']) && $api_response_bedrock['online'] === true) {
+} elseif (isset($api_response_bedrock['online']) && ($api_response_bedrock['online'] ?? false) === true) {
     $bedrock_online = true;
     // Jika perlu detail Bedrock lain dari API, tambahkan di sini dari $api_response_bedrock
+    // Contoh: $bedrock_players_online = $api_response_bedrock['players']['online'] ?? 'N/A';
 } else {
     $bedrock_error = 'Server Bedrock offline atau tidak merespons.';
 }
@@ -229,7 +233,6 @@ function highlightServerAddress($ip)
             font-family: var(--font-pixel);
             color: var(--primary-color);
             margin-bottom: 30px;
-            /* Jarak bawah default untuk h1 */
             font-size: 2.2em;
             text-shadow: 2px 2px 4px var(--shadow-color);
         }
@@ -240,7 +243,6 @@ function highlightServerAddress($ip)
             border-radius: var(--border-radius);
             padding: 25px;
             margin-bottom: 30px;
-            /* Jarak di bawah block ini */
             box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
@@ -264,7 +266,6 @@ function highlightServerAddress($ip)
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.1);
             margin-bottom: 15px;
-            /* Jarak dari tombol */
         }
 
         .main-ip-display .server-ip {
@@ -295,9 +296,7 @@ function highlightServerAddress($ip)
             box-shadow: 0 3px 10px rgba(76, 175, 80, 0.5);
         }
 
-
         .server-section {
-            /* Ini adalah blok status server utama */
             background-color: var(--background-color);
             border-radius: var(--border-radius);
             padding: 25px;
@@ -350,7 +349,6 @@ function highlightServerAddress($ip)
             gap: 20px;
             margin-bottom: 20px;
             flex-wrap: wrap;
-            /* Agar responsif */
         }
 
         .type-box {
@@ -359,11 +357,9 @@ function highlightServerAddress($ip)
             border-radius: 10px;
             flex: 1;
             min-width: 200px;
-            /* Minimum width untuk setiap box */
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
-            /* Untuk menempatkan konten di dalam box */
             flex-direction: column;
         }
 
@@ -558,7 +554,6 @@ function highlightServerAddress($ip)
             }
         }
     </style>
-
 </head>
 
 <body>
@@ -582,13 +577,13 @@ function highlightServerAddress($ip)
             <div class="server-type-status">
                 <div class="type-box">
                     <h3>Minecraft Java Edition</h3>
-                    <?php if ($status_java && ($status_java['online'] ?? false)): ?>
+                    <?php if ($status_java): ?>
                         <div class="status-indicator status-online">Online</div>
                         <div class="info-item">
                             <strong>Pemain:</strong> <?php echo $status_java['players']['online'] ?? '0'; ?> / <?php echo $status_java['players']['max'] ?? '0'; ?>
                         </div>
                         <div class="info-item">
-                            <strong>Versi:</strong> <?php echo htmlspecialchars($status_java['version'] ?? 'N/A'); ?>
+                            <strong>Versi:</strong> <?php echo htmlspecialchars($status_java['version']['name'] ?? 'N/A'); ?>
                         </div>
                         <div class="info-item">
                             <strong>Ping:</strong> <?php echo $ping_java_ms; ?>ms
@@ -734,7 +729,6 @@ function highlightServerAddress($ip)
             }
         }
     </script>
-
 </body>
 
 </html>
