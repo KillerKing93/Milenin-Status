@@ -29,8 +29,7 @@ $ping_java_ms = 'N/A'; // Untuk menyimpan nilai ping
 $minecraft_server_geo_location = 'Tidak diketahui'; // Untuk lokasi server Minecraft
 
 // --- Fungsi untuk mendapatkan geolokasi dari IP ---
-function getGeoLocation($ip)
-{
+function getGeoLocation($ip) {
     $url = "http://ip-api.com/json/$ip?fields=country,city,regionName";
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
@@ -90,11 +89,13 @@ try {
         if ($actual_server_ip && filter_var($actual_server_ip, FILTER_VALIDATE_IP)) {
             $minecraft_server_geo_location = getGeoLocation($actual_server_ip);
         }
+
     }
 
     if ($players) {
         $players_java = $players;
     }
+
 } catch (MinecraftPingException $e) {
     $error_java = 'Server Java offline atau tidak merespons ping. (Error: ' . htmlspecialchars($e->getMessage()) . ')';
     $status_java = null;
@@ -117,33 +118,28 @@ if ($fp) {
     fclose($fp);
 }
 
-// --- Fungsi untuk menyorot IP dan Port ---
-function highlightServerAddress($ip, $port)
-{
-    return "<span class='server-ip'>$ip</span>:<span class='server-port'>$port</span>";
+// --- Fungsi untuk menyorot IP dan Port (hanya menampilkan) ---
+function highlightServerAddress($ip) {
+    return "<span class='server-ip'>$ip</span>";
 }
 
 ?>
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Status Server Milenin Craftthingy</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <style>
         :root {
-            --primary-color: #4CAF50;
-            /* Hijau Minecraft */
+            --primary-color: #4CAF50; /* Hijau Minecraft */
             --secondary-color: #388E3C;
-            --background-color: #2c2f33;
-            /* Dark Grey */
-            --card-background: #36393f;
-            /* Slightly lighter dark grey */
+            --background-color: #2c2f33; /* Dark Grey */
+            --card-background: #36393f; /* Slightly lighter dark grey */
             --text-color: #ffffff;
-            --offline-color: #F44336;
-            /* Merah */
+            --offline-color: #F44336; /* Merah */
             --shadow-color: rgba(0, 0, 0, 0.4);
             --border-radius: 12px;
             --font-pixel: 'Press Start 2P', cursive;
@@ -187,12 +183,11 @@ function highlightServerAddress($ip, $port)
             border-radius: var(--border-radius);
             padding: 25px;
             margin-bottom: 30px;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
             position: relative;
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
-
         .server-section::before {
             content: '';
             position: absolute;
@@ -205,20 +200,9 @@ function highlightServerAddress($ip, $port)
         }
 
         @keyframes pulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.8;
-            }
-
-            50% {
-                transform: scale(1.05);
-                opacity: 1;
-            }
-
-            100% {
-                transform: scale(1);
-                opacity: 0.8;
-            }
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
         }
 
         h2 {
@@ -234,8 +218,7 @@ function highlightServerAddress($ip, $port)
             justify-content: space-around;
             gap: 20px;
             margin-bottom: 20px;
-            flex-wrap: wrap;
-            /* Agar responsif */
+            flex-wrap: wrap; /* Agar responsif */
         }
 
         .type-box {
@@ -243,15 +226,12 @@ function highlightServerAddress($ip, $port)
             padding: 15px 20px;
             border-radius: 10px;
             flex: 1;
-            min-width: 200px;
-            /* Minimum width untuk setiap box */
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            min-width: 200px; /* Minimum width untuk setiap box */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            /* Untuk menempatkan IP dan tombol di bawah info */
+            display: flex; /* Untuk menempatkan IP dan tombol di bawah info */
             flex-direction: column;
-            justify-content: space-between;
-            /* Untuk mendorong IP ke bawah */
+            justify-content: space-between; /* Untuk mendorong IP ke bawah */
         }
 
         .type-box h3 {
@@ -296,7 +276,7 @@ function highlightServerAddress($ip, $port)
         }
 
         .motd {
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(0,0,0,0.2);
             padding: 10px 20px;
             border-radius: 8px;
             margin-top: 20px;
@@ -309,7 +289,7 @@ function highlightServerAddress($ip, $port)
         }
 
         .players-list {
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(0,0,0,0.2);
             padding: 10px 20px;
             border-radius: 8px;
             margin-top: 20px;
@@ -335,7 +315,7 @@ function highlightServerAddress($ip, $port)
         }
 
         .players-list li {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: rgba(255,255,255,0.05);
             padding: 5px 10px;
             margin-bottom: 5px;
             border-radius: 5px;
@@ -351,62 +331,55 @@ function highlightServerAddress($ip, $port)
 
         .ip-copy-group {
             margin-top: 20px;
-            /* Jarak dari info di atasnya */
             padding-top: 15px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
-            /* Garis pemisah tipis */
         }
 
-        /* PERUBAHAN UKURAN FONT IP ADDRESS */
+        /* PERUBAHAN UKURAN FONT IP ADDRESS (lebih kecil lagi) */
         .ip-display {
             font-family: var(--font-pixel);
-            font-size: 0.95em;
-            /* Ukuran font lebih kecil */
+            font-size: 0.85em; /* Lebih kecil */
             color: #FFE0B2;
-            background-color: rgba(0, 0, 0, 0.3);
+            background-color: rgba(0,0,0,0.3);
             padding: 8px 12px;
-            /* Padding sedikit berkurang */
             border-radius: 8px;
-            display: block;
+            display: block; /* Pastikan selalu di baris baru */
             margin: 0 auto 10px auto;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
             border: 1px solid rgba(255, 255, 255, 0.1);
             cursor: pointer;
             transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
-
         .ip-display:hover {
-            background-color: rgba(0, 0, 0, 0.4);
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
+            background-color: rgba(0,0,0,0.4);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.6);
         }
-
         .ip-display .server-ip {
             color: var(--primary-color);
         }
-
-        .ip-display .server-port {
+        /* Style untuk port di baris baru */
+        .server-port-text {
+            font-family: var(--font-pixel);
+            font-size: 0.8em; /* Ukuran port bisa sedikit lebih kecil */
             color: #81C784;
+            display: block; /* Pastikan di baris baru */
+            margin-top: 5px; /* Sedikit jarak dari IP */
         }
 
-        /* PERBAIKAN Z-INDEX DAN DISPLAY UNTUK TOMBOL */
+
         .copy-button {
             background-color: var(--primary-color);
             color: var(--background-color);
             border: none;
             padding: 8px 18px;
-            /* Padding sedikit berkurang */
             border-radius: 8px;
             font-size: 0.9em;
-            /* Ukuran font sedikit berkurang */
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
             box-shadow: 0 5px 15px rgba(76, 175, 80, 0.5);
-            /* Pastikan tidak ada elemen yang menutupi. z-index tinggi agar di atas elemen lain */
             position: relative;
-            /* Penting untuk z-index */
             z-index: 10;
-            /* Beri z-index tinggi */
         }
 
         .copy-button:hover {
@@ -428,14 +401,13 @@ function highlightServerAddress($ip, $port)
 
         .server-locations {
             margin-top: 20px;
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(0,0,0,0.2);
             padding: 15px;
             border-radius: var(--border-radius);
             font-size: 0.95em;
             color: #E0E0E0;
             border: 1px dashed rgba(255, 255, 255, 0.1);
         }
-
         .server-locations strong {
             color: #FFEB3B;
         }
@@ -446,43 +418,38 @@ function highlightServerAddress($ip, $port)
                 padding: 25px;
                 max-width: 100%;
             }
-
             h1 {
                 font-size: 1.8em;
             }
-
             h2 {
                 font-size: 1.2em;
             }
-
             .server-type-status {
                 flex-direction: column;
                 gap: 15px;
             }
-
             .type-box {
                 min-width: unset;
                 width: 100%;
             }
-
             .ip-display {
-                font-size: 0.9em;
+                font-size: 0.8em;
                 padding: 8px 12px;
                 margin: 0 auto 8px auto;
             }
-
+            .server-port-text {
+                font-size: 0.75em;
+            }
             .copy-button {
                 padding: 8px 15px;
                 font-size: 0.85em;
             }
-
             .players-list ul {
                 columns: 1;
             }
         }
     </style>
 </head>
-
 <body>
     <div class="container">
         <h1>Status Server Milenin Craftthingy</h1>
@@ -504,18 +471,25 @@ function highlightServerAddress($ip, $port)
                         <div class="info-item">
                             <strong>Ping:</strong> <?php echo $ping_java_ms; ?>ms
                         </div>
+                        <div class="info-item">
+                            <strong>Port:</strong> <?php echo $server_port_java; ?>
+                        </div>
                         <?php if (!empty($status_java['HostName'])): ?>
                             <div class="motd"><?php echo htmlspecialchars($status_java['HostName']); ?></div>
                         <?php endif; ?>
                     <?php else: ?>
                         <div class="status-indicator status-offline">Offline</div>
                         <div class="info-item">Server sedang tidak tersedia.</div>
+                        <div class="info-item">
+                            <strong>Port:</strong> <?php echo $server_port_java; ?>
+                        </div>
                     <?php endif; ?>
 
                     <div class="ip-copy-group">
-                        <span class="ip-display" id="javaIpDisplay" data-ip="<?php echo $server_ip_java . ':' . $server_port_java; ?>">
-                            <?php echo highlightServerAddress($server_ip_java, $server_port_java); ?>
+                        <span class="ip-display" id="javaIpDisplay" data-ip="<?php echo $server_ip_java; ?>">
+                            <?php echo highlightServerAddress($server_ip_java); ?>
                         </span>
+                        <span class="server-port-text">:<?php echo $server_port_java; ?></span>
                         <button class="copy-button" onclick="copyIp('javaIpDisplay')">Salin IP Java</button>
                     </div>
                 </div>
@@ -526,15 +500,22 @@ function highlightServerAddress($ip, $port)
                         <div class="status-indicator status-online">Online</div>
                         <div class="info-item">Server Bedrock Edition terdeteksi online.</div>
                         <div class="info-item" style="font-size: 0.9em; color: #BBB;">(Tidak ada detail pemain/MOTD dari cek dasar.)</div>
+                        <div class="info-item">
+                            <strong>Port:</strong> <?php echo $server_port_bedrock; ?>
+                        </div>
                     <?php else: ?>
                         <div class="status-indicator status-offline">Offline</div>
                         <div class="info-item">Server sedang tidak tersedia.</div>
+                        <div class="info-item">
+                            <strong>Port:</strong> <?php echo $server_port_bedrock; ?>
+                        </div>
                     <?php endif; ?>
 
                     <div class="ip-copy-group">
-                        <span class="ip-display" id="bedrockIpDisplay" data-ip="<?php echo $server_ip_bedrock . ':' . $server_port_bedrock; ?>">
-                            <?php echo highlightServerAddress($server_ip_bedrock, $server_port_bedrock); ?>
+                        <span class="ip-display" id="bedrockIpDisplay" data-ip="<?php echo $server_ip_bedrock; ?>">
+                            <?php echo highlightServerAddress($server_ip_bedrock); ?>
                         </span>
+                        <span class="server-port-text">:<?php echo $server_port_bedrock; ?></span>
                         <button class="copy-button" onclick="copyIp('bedrockIpDisplay')">Salin IP Bedrock</button>
                     </div>
                 </div>
@@ -560,8 +541,7 @@ function highlightServerAddress($ip, $port)
                 </div>
             <?php endif; ?>
 
-        </div>
-        <div class="server-locations">
+        </div> <div class="server-locations">
             <h3>Lokasi Server:</h3>
             <p>
                 <strong>Server Minecraft (Java Edition):</strong> <?php echo $minecraft_server_geo_location; ?><br>
@@ -574,23 +554,48 @@ function highlightServerAddress($ip, $port)
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function copyIp(elementId) {
             const ipAddress = document.getElementById(elementId).getAttribute('data-ip');
-            // Cek apakah navigator.clipboard tersedia
+            // Gabungkan IP dan port untuk disalin
+            let fullIpToCopy;
+            if (elementId === 'javaIpDisplay') {
+                fullIpToCopy = ipAddress + ':<?php echo $server_port_java; ?>';
+            } else if (elementId === 'bedrockIpDisplay') {
+                fullIpToCopy = ipAddress + ':<?php echo $server_port_bedrock; ?>';
+            } else {
+                fullIpToCopy = ipAddress; // Fallback
+            }
+
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(ipAddress).then(() => {
-                    alert('IP berhasil disalin: ' + ipAddress);
+                navigator.clipboard.writeText(fullIpToCopy).then(() => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil Disalin!',
+                        text: 'IP Server: ' + fullIpToCopy + ' telah disalin ke clipboard Anda.',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true,
+                        customClass: {
+                            popup: 'swal2-dark-mode'
+                        }
+                    });
                 }).catch(err => {
                     console.error('Gagal menyalin IP:', err);
-                    // Fallback jika ada error saat menyalin
-                    alert('Gagal menyalin IP. Silakan salin secara manual: ' + ipAddress);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Menyalin!',
+                        text: 'Silakan salin IP secara manual: ' + fullIpToCopy,
+                        customClass: {
+                            popup: 'swal2-dark-mode'
+                        }
+                    });
                 });
             } else {
                 // Fallback untuk browser lama atau jika clipboard API tidak tersedia
                 const textArea = document.createElement("textarea");
-                textArea.value = ipAddress;
-                // Hindari scroll ke textarea
+                textArea.value = fullIpToCopy;
                 textArea.style.position = "fixed";
                 textArea.style.left = "-999999px";
                 document.body.appendChild(textArea);
@@ -598,15 +603,62 @@ function highlightServerAddress($ip, $port)
                 textArea.select();
                 try {
                     document.execCommand('copy');
-                    alert('IP berhasil disalin: ' + ipAddress);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil Disalin!',
+                        text: 'IP Server: ' + fullIpToCopy + ' telah disalin ke clipboard Anda.',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true,
+                        customClass: {
+                            popup: 'swal2-dark-mode'
+                        }
+                    });
                 } catch (err) {
                     console.error('Gagal menyalin IP (fallback):', err);
-                    alert('Gagal menyalin IP. Silakan salin secara manual: ' + ipAddress);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Menyalin!',
+                        text: 'Silakan salin IP secara manual: ' + fullIpToCopy,
+                        customClass: {
+                            popup: 'swal2-dark-mode'
+                        }
+                    });
                 }
                 document.body.removeChild(textArea);
             }
         }
     </script>
+    <style>
+        /* SweetAlert2 Dark Mode Custom Styles */
+        .swal2-dark-mode {
+            background-color: var(--card-background) !important;
+            color: var(--text-color) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .swal2-title {
+            color: var(--primary-color) !important;
+            font-family: var(--font-pixel) !important;
+            font-size: 1.3em !important;
+        }
+        .swal2-html-container {
+            color: var(--text-color) !important;
+            font-family: var(--font-general) !important;
+        }
+        .swal2-icon.swal2-success [class^=swal2-success-line][class$=long] {
+            background-color: var(--primary-color) !important;
+        }
+        .swal2-icon.swal2-success [class^=swal2-success-line][class$=tip] {
+            background-color: var(--primary-color) !important;
+        }
+        .swal2-confirm.swal2-styled {
+            background-color: var(--primary-color) !important;
+            color: var(--background-color) !important;
+            font-weight: bold !important;
+        }
+        .swal2-progress-bar {
+            background: var(--primary-color) !important;
+        }
+    </style>
 </body>
-
 </html>
