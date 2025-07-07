@@ -29,8 +29,7 @@ $ping_java_ms = 'N/A'; // Untuk menyimpan nilai ping
 $minecraft_server_geo_location = 'Tidak diketahui'; // Untuk lokasi server Minecraft
 
 // --- Fungsi untuk mendapatkan geolokasi dari IP ---
-function getGeoLocation($ip)
-{
+function getGeoLocation($ip) {
     $url = "http://ip-api.com/json/$ip?fields=country,city,regionName";
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
@@ -90,11 +89,13 @@ try {
         if ($actual_server_ip && filter_var($actual_server_ip, FILTER_VALIDATE_IP)) {
             $minecraft_server_geo_location = getGeoLocation($actual_server_ip);
         }
+
     }
 
     if ($players) {
         $players_java = $players;
     }
+
 } catch (MinecraftPingException $e) {
     $error_java = 'Server Java offline atau tidak merespons ping. (Error: ' . htmlspecialchars($e->getMessage()) . ')';
     $status_java = null;
@@ -118,15 +119,13 @@ if ($fp) {
 }
 
 // --- Fungsi untuk menyorot IP dan Port ---
-function highlightServerAddress($ip, $port)
-{
+function highlightServerAddress($ip, $port) {
     return "<span class='server-ip'>$ip</span>:<span class='server-port'>$port</span>";
 }
 
 ?>
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -134,16 +133,12 @@ function highlightServerAddress($ip, $port)
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #4CAF50;
-            /* Hijau Minecraft */
+            --primary-color: #4CAF50; /* Hijau Minecraft */
             --secondary-color: #388E3C;
-            --background-color: #2c2f33;
-            /* Dark Grey */
-            --card-background: #36393f;
-            /* Slightly lighter dark grey */
+            --background-color: #2c2f33; /* Dark Grey */
+            --card-background: #36393f; /* Slightly lighter dark grey */
             --text-color: #ffffff;
-            --offline-color: #F44336;
-            /* Merah */
+            --offline-color: #F44336; /* Merah */
             --shadow-color: rgba(0, 0, 0, 0.4);
             --border-radius: 12px;
             --font-pixel: 'Press Start 2P', cursive;
@@ -169,7 +164,6 @@ function highlightServerAddress($ip, $port)
             box-shadow: 0 10px 30px var(--shadow-color);
             padding: 40px;
             max-width: 600px;
-            /* Lebar container lebih ramping */
             width: 100%;
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -188,12 +182,11 @@ function highlightServerAddress($ip, $port)
             border-radius: var(--border-radius);
             padding: 25px;
             margin-bottom: 30px;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
             position: relative;
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
-
         .server-section::before {
             content: '';
             position: absolute;
@@ -206,20 +199,9 @@ function highlightServerAddress($ip, $port)
         }
 
         @keyframes pulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.8;
-            }
-
-            50% {
-                transform: scale(1.05);
-                opacity: 1;
-            }
-
-            100% {
-                transform: scale(1);
-                opacity: 0.8;
-            }
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
         }
 
         h2 {
@@ -235,8 +217,7 @@ function highlightServerAddress($ip, $port)
             justify-content: space-around;
             gap: 20px;
             margin-bottom: 20px;
-            flex-wrap: wrap;
-            /* Agar responsif */
+            flex-wrap: wrap; /* Agar responsif */
         }
 
         .type-box {
@@ -244,10 +225,12 @@ function highlightServerAddress($ip, $port)
             padding: 15px 20px;
             border-radius: 10px;
             flex: 1;
-            min-width: 200px;
-            /* Minimum width untuk setiap box */
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            min-width: 200px; /* Minimum width untuk setiap box */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex; /* Untuk menempatkan IP dan tombol di bawah info */
+            flex-direction: column;
+            justify-content: space-between; /* Untuk mendorong IP ke bawah */
         }
 
         .type-box h3 {
@@ -292,7 +275,7 @@ function highlightServerAddress($ip, $port)
         }
 
         .motd {
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(0,0,0,0.2);
             padding: 10px 20px;
             border-radius: 8px;
             margin-top: 20px;
@@ -305,7 +288,7 @@ function highlightServerAddress($ip, $port)
         }
 
         .players-list {
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(0,0,0,0.2);
             padding: 10px 20px;
             border-radius: 8px;
             margin-top: 20px;
@@ -331,7 +314,7 @@ function highlightServerAddress($ip, $port)
         }
 
         .players-list li {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: rgba(255,255,255,0.05);
             padding: 5px 10px;
             margin-bottom: 5px;
             border-radius: 5px;
@@ -345,52 +328,33 @@ function highlightServerAddress($ip, $port)
             color: var(--primary-color);
         }
 
-        .ip-copy-section {
-            background-color: rgba(0, 0, 0, 0.3);
-            padding: 20px;
-            border-radius: var(--border-radius);
-            margin-top: 25px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        .ip-copy-section h3 {
-            font-family: var(--font-pixel);
-            font-size: 1.2em;
-            color: #FFE0B2;
-            margin-top: 0;
-            margin-bottom: 20px;
-        }
-
-        .ip-item {
-            margin-bottom: 15px;
+        .ip-copy-group {
+            margin-top: 20px; /* Jarak dari info di atasnya */
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05); /* Garis pemisah tipis */
         }
 
         .ip-display {
             font-family: var(--font-pixel);
-            font-size: 1.2em;
-            /* Sedikit lebih kecil agar muat */
+            font-size: 1.1em; /* Sedikit lebih kecil agar muat */
             color: #FFE0B2;
-            background-color: rgba(0, 0, 0, 0.3);
-            padding: 12px 20px;
-            /* Padding sedikit berkurang */
+            background-color: rgba(0,0,0,0.3);
+            padding: 10px 15px; /* Padding sedikit berkurang */
             border-radius: 8px;
-            display: inline-block;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+            display: block; /* Menjadi block agar di baris baru */
+            margin: 0 auto 10px auto; /* Pusatkan dan beri jarak bawah */
+            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
             border: 1px solid rgba(255, 255, 255, 0.1);
             cursor: pointer;
             transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
-
         .ip-display:hover {
-            background-color: rgba(0, 0, 0, 0.4);
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
+            background-color: rgba(0,0,0,0.4);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.6);
         }
-
         .ip-display .server-ip {
             color: var(--primary-color);
         }
-
         .ip-display .server-port {
             color: #81C784;
         }
@@ -400,16 +364,12 @@ function highlightServerAddress($ip, $port)
             color: var(--background-color);
             border: none;
             padding: 10px 20px;
-            /* Padding sedikit berkurang */
             border-radius: 8px;
             font-size: 1em;
-            /* Ukuran font sedikit berkurang */
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
             box-shadow: 0 5px 15px rgba(76, 175, 80, 0.5);
-            margin-left: 10px;
-            /* Jarak dari IP display */
         }
 
         .copy-button:hover {
@@ -431,14 +391,13 @@ function highlightServerAddress($ip, $port)
 
         .server-locations {
             margin-top: 20px;
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(0,0,0,0.2);
             padding: 15px;
             border-radius: var(--border-radius);
             font-size: 0.95em;
             color: #E0E0E0;
             border: 1px dashed rgba(255, 255, 255, 0.1);
         }
-
         .server-locations strong {
             color: #FFEB3B;
         }
@@ -449,45 +408,35 @@ function highlightServerAddress($ip, $port)
                 padding: 25px;
                 max-width: 100%;
             }
-
             h1 {
                 font-size: 1.8em;
             }
-
             h2 {
                 font-size: 1.2em;
             }
-
             .server-type-status {
                 flex-direction: column;
                 gap: 15px;
             }
-
             .type-box {
                 min-width: unset;
                 width: 100%;
             }
-
             .ip-display {
                 font-size: 1em;
                 padding: 10px 15px;
+                margin: 0 auto 8px auto;
             }
-
             .copy-button {
                 padding: 8px 15px;
                 font-size: 0.9em;
-                margin-top: 10px;
-                /* Jarak ke bawah jika tombol turun */
-                margin-left: 0;
             }
-
             .players-list ul {
                 columns: 1;
             }
         }
     </style>
 </head>
-
 <body>
     <div class="container">
         <h1>Status Server Milenin Craftthingy</h1>
@@ -516,6 +465,13 @@ function highlightServerAddress($ip, $port)
                         <div class="status-indicator status-offline">Offline</div>
                         <div class="info-item">Server sedang tidak tersedia.</div>
                     <?php endif; ?>
+
+                    <div class="ip-copy-group">
+                        <span class="ip-display" id="javaIpDisplay" data-ip="<?php echo $server_ip_java . ':' . $server_port_java; ?>">
+                            <?php echo highlightServerAddress($server_ip_java, $server_port_java); ?>
+                        </span>
+                        <button class="copy-button" onclick="copyIp('javaIpDisplay')">Salin IP Java</button>
+                    </div>
                 </div>
 
                 <div class="type-box">
@@ -528,6 +484,13 @@ function highlightServerAddress($ip, $port)
                         <div class="status-indicator status-offline">Offline</div>
                         <div class="info-item">Server sedang tidak tersedia.</div>
                     <?php endif; ?>
+
+                    <div class="ip-copy-group">
+                        <span class="ip-display" id="bedrockIpDisplay" data-ip="<?php echo $server_ip_bedrock . ':' . $server_port_bedrock; ?>">
+                            <?php echo highlightServerAddress($server_ip_bedrock, $server_port_bedrock); ?>
+                        </span>
+                        <button class="copy-button" onclick="copyIp('bedrockIpDisplay')">Salin IP Bedrock</button>
+                    </div>
                 </div>
             </div> <?php if ($error_java): ?>
                 <div class="info-item" style="color: #FFEB3B; font-size: 0.9em; margin-top: 15px;">
@@ -551,24 +514,7 @@ function highlightServerAddress($ip, $port)
                 </div>
             <?php endif; ?>
 
-        </div>
-        <div class="ip-copy-section">
-            <h3>Salin IP Server</h3>
-            <div class="ip-item">
-                <span class="ip-display" id="javaIpDisplay" data-ip="<?php echo $server_ip_java . ':' . $server_port_java; ?>">
-                    <?php echo highlightServerAddress($server_ip_java, $server_port_java); ?>
-                </span>
-                <button class="copy-button" onclick="copyIp('javaIpDisplay')">Salin IP Java</button>
-            </div>
-            <div class="ip-item">
-                <span class="ip-display" id="bedrockIpDisplay" data-ip="<?php echo $server_ip_bedrock . ':' . $server_port_bedrock; ?>">
-                    <?php echo highlightServerAddress($server_ip_bedrock, $server_port_bedrock); ?>
-                </span>
-                <button class="copy-button" onclick="copyIp('bedrockIpDisplay')">Salin IP Bedrock</button>
-            </div>
-        </div>
-
-        <div class="server-locations">
+        </div> <div class="server-locations">
             <h3>Lokasi Server:</h3>
             <p>
                 <strong>Server Minecraft (Java Edition):</strong> <?php echo $minecraft_server_geo_location; ?><br>
@@ -593,5 +539,4 @@ function highlightServerAddress($ip, $port)
         }
     </script>
 </body>
-
 </html>
